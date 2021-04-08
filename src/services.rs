@@ -2,12 +2,91 @@ use strum::VariantNames;
 use strum_macros::{EnumString, EnumVariantNames};
 
 pub struct Service {
-    pub wait_time: u64,
-    pub cost: f64,
-    pub demand: u64,
-    pub profit: i64,
-    pub offer: u64,
-    pub usage: u64,
+    pub wait_time: isize,
+    pub cost: isize,
+    pub demand: isize,
+    pub profit: isize,
+    pub offer: isize,
+    pub usage: isize,
+    pub backends: Vec<Service>,
+}
+
+impl Service {
+    pub fn new(
+        wait_time: isize,
+        cost: isize,
+        demand: isize,
+        profit: isize,
+        offer: isize,
+        usage: isize,
+        backends: Vec<Service>,
+    ) -> Self {
+        Service {
+            wait_time,
+            cost,
+            demand,
+            profit,
+            offer,
+            usage,
+            backends,
+        }
+    }
+
+    pub fn init() -> Vec<Service> {
+        let mut tmp = Vec::<Service>::new();
+        for _ in 0..7 {
+            let s = Service::new(0, 0, 0, 0, 0, 0, Vec::<Service>::new());
+            tmp.push(s);
+        }
+
+        tmp
+    }
+
+    pub fn set_config(&mut self, property: &str, value: isize) -> Result<(), &'static str> {
+        match property {
+            "wait_time" => self.wait_time = value,
+            "cost" => self.cost = value,
+            "demand" => self.demand = value,
+            "profit" => self.profit = value,
+            "offer" => self.offer = value,
+            "usage" => self.usage = value,
+            "backends" => return Err("use `set_backend_config()` to configure backends"),
+            _ => return Err("No such property name"),
+        }
+
+        Ok(())
+    }
+
+    fn add_backend(
+        &mut self,
+        wait_time: isize,
+        cost: isize,
+        demand: isize,
+        profit: isize,
+        offer: isize,
+        usage: isize,
+        backends: Vec<Service>,
+    ) {
+        let backend = Service {
+            wait_time,
+            cost,
+            demand,
+            profit,
+            offer,
+            usage,
+            backends,
+        };
+
+        self.backends.push(backend);
+    }
+
+    fn set_backend_config(
+        backend: &mut Service,
+        property: &str,
+        value: isize,
+    ) -> Result<(), &'static str> {
+        Ok(backend.set_config(property, value)?)
+    }
 }
 
 #[derive(Copy, Clone, EnumString, EnumVariantNames)]
