@@ -1,5 +1,3 @@
-use rand::random;
-
 pub struct RandTable<T> {
     pub len: usize,
     pub weights: Vec<u8>,
@@ -28,7 +26,7 @@ where
     }
 
     pub fn random(&self) -> T {
-        let rand = random::<usize>();
+        let rand = rand::random::<usize>();
         self.data[rand % self.len]
     }
 }

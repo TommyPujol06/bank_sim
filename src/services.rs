@@ -1,27 +1,31 @@
-use strum::VariantNames;
-use strum_macros::{EnumString, EnumVariantNames};
+use crate::utils::RandTable;
+use std::fmt;
 
-pub struct Service {
+#[derive(Copy)]
+pub struct Service<'a> {
+    pub name: &'static str,
     pub wait_time: isize,
     pub cost: isize,
     pub demand: isize,
     pub profit: isize,
     pub offer: isize,
     pub usage: isize,
-    pub backends: Vec<Service>,
+    pub backends: Option<&'a mut [&'a mut Service<'a>]>,
 }
 
-impl Service {
+impl<'a> Service<'a> {
     pub fn new(
+        name: &'static str,
         wait_time: isize,
         cost: isize,
         demand: isize,
         profit: isize,
         offer: isize,
         usage: isize,
-        backends: Vec<Service>,
+        backends: Option<Box<Vec<Service>>>,
     ) -> Self {
         Service {
+            name,
             wait_time,
             cost,
             demand,
@@ -32,42 +36,35 @@ impl Service {
         }
     }
 
-    pub fn init() -> Vec<Service> {
-        let mut tmp = Vec::<Service>::new();
-        for _ in 0..7 {
-            let s = Service::new(0, 0, 0, 0, 0, 0, Vec::<Service>::new());
-            tmp.push(s);
-        }
-
-        tmp
-    }
-
     pub fn set_config(&mut self, property: &str, value: isize) -> Result<(), &'static str> {
         match property {
+            "name" => return Err("Can't change `name` value"),
             "wait_time" => self.wait_time = value,
             "cost" => self.cost = value,
             "demand" => self.demand = value,
             "profit" => self.profit = value,
             "offer" => self.offer = value,
             "usage" => self.usage = value,
-            "backends" => return Err("use `set_backend_config()` to configure backends"),
+            "backends" => return Err("Use `set_backend_config()` to configure backends"),
             _ => return Err("No such property name"),
         }
 
         Ok(())
     }
 
-    fn add_backend(
+    pub fn add_backend(
         &mut self,
+        name: &'static str,
         wait_time: isize,
         cost: isize,
         demand: isize,
         profit: isize,
         offer: isize,
         usage: isize,
-        backends: Vec<Service>,
+        backends: Option<&'a mut [Service<'a>]>,
     ) {
         let backend = Service {
+            name,
             wait_time,
             cost,
             demand,
@@ -77,10 +74,12 @@ impl Service {
             backends,
         };
 
-        self.backends.push(backend);
+        self.backends
+            .get_or_insert_with(|| ([] as [Service; 0]))
+            .push(backend);
     }
 
-    fn set_backend_config(
+    pub fn set_backend_config(
         backend: &mut Service,
         property: &str,
         value: isize,
@@ -89,49 +88,45 @@ impl Service {
     }
 }
 
-#[derive(Copy, Clone, EnumString, EnumVariantNames)]
-#[strum(serialize_all = "UPPERCASE")]
-pub enum Services {
-    POS,
-    ATM,
-    WEB,
-    APP,
-    BOT,
-    HHD,
-    OFF,
+impl<'a> fmt::Display for Service<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
-impl Services {
-    pub fn into_vec() -> Vec<&'static str> {
-        let mut tmp = Vec::<&'static str>::new();
-        for &item in Services::VARIANTS {
-            tmp.push(item);
-        }
+pub struct ServiceBucket<'a> {
+    pub services: Vec<Service<'a>>,
+    pub weights: Vec<u8>,
+}
 
-        tmp
-    }
-
-    pub fn from_str(name: &str) -> Self {
-        match name {
-            "POS" => Services::POS,
-            "ATM" => Services::ATM,
-            "WEB" => Services::WEB,
-            "APP" => Services::APP,
-            "BOT" => Services::BOT,
-            "HHD" => Services::HHD,
-            _ => Services::OFF,
+impl<'a> ServiceBucket<'a> {
+    pub fn new() -> Self {
+        Self {
+            services: Vec::new(),
+            weights: Vec::new(),
         }
     }
 
-    pub fn to_str(&self) -> &str {
-        match self {
-            Services::POS => "POS",
-            Services::ATM => "ATM",
-            Services::WEB => "WEB",
-            Services::APP => "APP",
-            Services::BOT => "BOT",
-            Services::HHD => "HHD",
-            Services::OFF => "OFF",
+    pub fn push(&mut self, service: Service<'a>, weight: u8) {
+        self.services.push(service);
+        self.weights.push(weight);
+    }
+
+    pub fn find(&mut self, name: &'static str) -> Option<Service<'a>> {
+        for service in self.services {
+            if service.name == name {
+                return Some(service);
+            }
         }
+
+        None
+    }
+
+    pub fn random(&mut self) -> Service<'a> {
+        //
+        // Need to see if it'd be worth only calculating the random table after each insert instead
+        // of every time the random function is called.
+        //
+        RandTable::new(&self.services, self.weights).random()
     }
 }
