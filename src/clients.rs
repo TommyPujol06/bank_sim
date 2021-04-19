@@ -2,18 +2,18 @@ use crate::services::{Service, ServiceBucket};
 use crate::utils::RandTable;
 use std::fmt;
 
-pub struct Client<'a> {
+pub struct Client {
     pub id: usize,
     pub priority: usize,
     pub elapsed_time: i128,
-    pub service: Service<'a>,
+    pub service: Service,
 }
 
-pub fn populate_clients<'a>(
+pub fn populate_clients(
     num: usize,
-    out: &mut Vec<Client<'a>>,
-    service_bucket: ServiceBucket,
-    priority_table: RandTable<usize>,
+    out: &mut Vec<Client>,
+    service_bucket: &mut ServiceBucket,
+    priority_table: &mut RandTable<usize>,
 ) {
     for id in 0..num {
         out.push(Client {
@@ -25,7 +25,7 @@ pub fn populate_clients<'a>(
     }
 }
 
-impl<'a> fmt::Display for Client<'a> {
+impl fmt::Display for Client {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

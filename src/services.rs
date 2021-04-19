@@ -1,8 +1,8 @@
-use crate::utils::RandTable;
+use crate::utils::{RandTable, Tcopy};
 use std::fmt;
 
-#[derive(Copy)]
-pub struct Service<'a> {
+#[derive(Clone)]
+pub struct Service {
     pub name: &'static str,
     pub wait_time: isize,
     pub cost: isize,
@@ -10,10 +10,10 @@ pub struct Service<'a> {
     pub profit: isize,
     pub offer: isize,
     pub usage: isize,
-    pub backends: Option<&'a mut [&'a mut Service<'a>]>,
+    pub backends: Option<Vec<Service>>,
 }
 
-impl<'a> Service<'a> {
+impl Service {
     pub fn new(
         name: &'static str,
         wait_time: isize,
@@ -22,7 +22,7 @@ impl<'a> Service<'a> {
         profit: isize,
         offer: isize,
         usage: isize,
-        backends: Option<Box<Vec<Service>>>,
+        backends: Option<Vec<Service>>,
     ) -> Self {
         Service {
             name,
@@ -61,7 +61,7 @@ impl<'a> Service<'a> {
         profit: isize,
         offer: isize,
         usage: isize,
-        backends: Option<&'a mut [Service<'a>]>,
+        backends: Option<Vec<Service>>,
     ) {
         let backend = Service {
             name,
@@ -75,7 +75,7 @@ impl<'a> Service<'a> {
         };
 
         self.backends
-            .get_or_insert_with(|| ([] as [Service; 0]))
+            .get_or_insert_with(|| Vec::new())
             .push(backend);
     }
 
@@ -88,18 +88,33 @@ impl<'a> Service<'a> {
     }
 }
 
-impl<'a> fmt::Display for Service<'a> {
+impl Tcopy for Service {
+    fn copy(&mut self) -> Service {
+        Service {
+            name: self.name,
+            wait_time: self.wait_time,
+            cost: self.cost,
+            demand: self.demand,
+            profit: self.profit,
+            offer: self.offer,
+            usage: self.usage,
+            backends: Some((*self.backends.get_or_insert_with(|| Vec::new()).clone()).to_vec()),
+        }
+    }
+}
+
+impl fmt::Display for Service {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
-pub struct ServiceBucket<'a> {
-    pub services: Vec<Service<'a>>,
+pub struct ServiceBucket {
+    pub services: Vec<Service>,
     pub weights: Vec<u8>,
 }
 
-impl<'a> ServiceBucket<'a> {
+impl ServiceBucket {
     pub fn new() -> Self {
         Self {
             services: Vec::new(),
@@ -107,26 +122,26 @@ impl<'a> ServiceBucket<'a> {
         }
     }
 
-    pub fn push(&mut self, service: Service<'a>, weight: u8) {
+    pub fn push(&mut self, service: Service, weight: u8) {
         self.services.push(service);
         self.weights.push(weight);
     }
 
-    pub fn find(&mut self, name: &'static str) -> Option<Service<'a>> {
-        for service in self.services {
+    pub fn find(&mut self, name: &'static str) -> Option<Service> {
+        for service in &self.services {
             if service.name == name {
-                return Some(service);
+                return Some(service.clone());
             }
         }
 
         None
     }
 
-    pub fn random(&mut self) -> Service<'a> {
+    pub fn random(&mut self) -> Service {
         //
         // Need to see if it'd be worth only calculating the random table after each insert instead
         // of every time the random function is called.
         //
-        RandTable::new(&self.services, self.weights).random()
+        RandTable::new(self.services.clone(), self.weights.clone()).random()
     }
 }
