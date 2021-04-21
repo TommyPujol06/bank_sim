@@ -5,21 +5,28 @@
 #ifndef BANK_SIM_CLIENTS_H
 #define BANK_SIM_CLIENTS_H
 
+#include "elapsed_time.h"
 #include "services.h"
-
-using std::string;
-using std::vector;
 
 class Client {
 public:
    int id;
    int priority;
-   // FIXME: need to use a better time keeping data structure.
-   int elapsed_time;
-   Service service;
 
-   string to_string();
+   TimeElapsed elapsed_time{};
+   Service* service;
+
+   std::string to_string();
+
+   Client(int id, int priority, TimeElapsed elapsed_time, Service* service) {
+       this->id = id;
+       this->priority = priority;
+       this->service = service;
+   }
 };
 
+namespace Core {
+    void populate_clients(int num, vector<Client> &out, ServiceBucket service_bucket, RandTable<int> &priority_table);
+}
 
 #endif //BANK_SIM_CLIENTS_H

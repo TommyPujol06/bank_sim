@@ -3,20 +3,17 @@
 //
 
 #include "clients.h"
-#include "random.h"
 
-#include <boost/format.hpp>
-
-string Client::to_string() {
-    return boost::str(boost::format("%d;%s;%d;%d") % this->id % this->service.name % this->priority % this->elapsed_time);
+std::string Client::to_string() {
+    return boost::str(boost::format("%d;%s;%d;%d") % this->id % this->service->name % this->priority % Time::human_time(this->elapsed_time));
 }
 
-void populate_clients
-(int num, vector<Client>& out, ServiceBucket& service_bucket, RandTable<int>& priority_table)
-{
-    for (int i=0; i != num; i++) {
-        out.push_back(Client {
-            i, priority_table.random(), 0, service_bucket.random()
-        });
+namespace Core {
+    void populate_clients(int num, vector<Client> &out, ServiceBucket service_bucket, RandTable<int> &priority_table) {
+        for (int i = 0; i != num; i++) {
+            out.emplace_back(Client(
+                    i, *priority_table.random(), Time::none(), service_bucket.random()
+            ));
+        }
     }
 }

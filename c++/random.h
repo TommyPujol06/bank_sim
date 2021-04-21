@@ -5,11 +5,7 @@
 #ifndef BANK_SIM_RANDOM_H
 #define BANK_SIM_RANDOM_H
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/combine.hpp>
-#include <boost/random.hpp>
-
-using std::vector;
+#include "common.h"
 
 template <typename T>
 class RandTable {
@@ -17,8 +13,12 @@ public:
     int len{};
     vector<T> data;
 
+    RandTable() {
+        this->len = 0;
+    }
+
     RandTable(vector<T> data, vector<int> weights);
-    T random();
+    T* random();
 };
 
 template<typename T>
@@ -39,11 +39,16 @@ RandTable<T>::RandTable(vector<T> data, vector<int> weights) {
 }
 
 template<typename T>
-T RandTable<T>::random() {
+T* RandTable<T>::random() {
+
+    if(this->len == 0) {
+        throw std::runtime_error("Can't choose a random item from an empty list.");
+    }
+
     boost::random::mt19937 rng;
     boost::random::uniform_int_distribution<> number(1, this->len);
     int rand = number(rng);
-    return this->data[rand - 1];
+    return &this->data[rand - 1];
 }
 
 

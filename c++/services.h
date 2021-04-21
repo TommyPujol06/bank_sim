@@ -6,7 +6,7 @@
 #define BANK_SIM_SERVICES_H
 
 #include "random.h"
-#include <algorithm>
+#include "common.h"
 
 class Service {
 public:
@@ -19,10 +19,8 @@ public:
     long usage;
     vector<Service> backends;
 
-    // FIXME: Need to have a better return type to include errors.
-    // Maybe use something similar to Rust's: Result<(), &'static str>
     int set_config(const char* property, long new_value);
-    void add_backend(Service backend);
+    void add_backend(const Service& backend);
 };
 
 class ServiceBucket {
@@ -31,10 +29,15 @@ public:
     vector<int> weights;
     RandTable<Service> services_table;
 
-    void push(Service service, int weight);
+    void push(Service& service, int weight);
     void remove(const char* name) const;
-    void find();
-    Service random();
+
+    [[maybe_unused]] std::optional<Service> find(const char* name);
+    Service* random();
+
+    ServiceBucket() {
+        this->renew_random_table();
+    }
 
 private:
     void renew_random_table();
