@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <optional>
+#include <string>
 #include <stdexcept>
 
 #include <boost/format.hpp>
@@ -92,11 +93,21 @@ public:
     long demand;
     long profit;
     long offer;
-    long usage;
     vector<Service>* backends;
 
     int set_config(const char* property, long new_value);
     void add_backend(const Service& backend);
+    Service() {}
+    Service(const char* name, long int& wait_time, long int& cost, long int& demand, long int& profit, long int& offer) {
+	this->name = name;
+	this->wait_time = wait_time;
+	this->cost = cost;
+	this->demand = demand;
+	this->profit = profit;
+	this->offer = offer;
+    }
+private:
+    long usage;
 };
 
 class ServiceBucket {
@@ -166,7 +177,6 @@ int Service::set_config(const char *property, long new_value) {
     else if (strcmp(property, "demand") == 0) { this->demand = new_value; return 0; }
     else if (strcmp(property, "profit") == 0) { this->profit = new_value; return 0; }
     else if (strcmp(property, "offer") == 0) { this->offer = new_value; return 0; }
-    else if (strcmp(property, "usage") == 0) { this->usage = new_value; return 0; }
     else { return -1; }
 }
 
@@ -210,6 +220,50 @@ void populate_clients(int num, vector<Client> &out, ServiceBucket service_bucket
     }
 }
 
+void populate_services(ServiceBucket out) {
+    int i = 1;
+    for (;;) {
+	    std::cout << "Service-" << i << " config." << std::endl;
+
+	    std::string name;
+	    // FIXME: For some reason this isn't reading the string.
+	    std::cout << "Service name: " << std::endl;
+	    std::getline (std::cin, name);
+	    std::cout << "[" << __FILE__ << ":" << __LINE__ << "] name=`" << name << "`." << std::endl;
+
+	    long wait_time, cost, demand, profit, offer, usage;
+	    std::cout << "Average wait time (seconds): " << std::endl;
+	    std::cin >> wait_time;
+
+	    std::cout << "Cost: " << std::endl;
+	    std::cin >> cost;
+
+	    std::cout << "Demand per hour: " << std::endl;
+	    std::cin >> demand;
+
+	    std::cout << "Profit: " << std::endl;
+	    std::cin >> profit;
+
+	    std::cout << "Offer (Available instances of service): " << std::endl;
+	    std::cin >> offer;
+
+	    int weight;
+	    std::cout << "Weight (Probability of service being chosen): " << std::endl;
+	    std::cin >> weight;
+	    
+	    std::string next;
+	    std::cout << "Press Y to add a new service." << std::endl;
+	    std::getline (std::cin, next);
+
+	    Service tmp = Service(name.c_str(), wait_time, cost, demand, profit, offer);
+	    out.push(tmp, weight);
+
+	    if (strcmp(next.c_str(), "Y") != 0)
+		    break;
+	    
+	    i++;
+    }
+}
 
 int main() {
     int simulation_size;
@@ -221,9 +275,9 @@ int main() {
 
     std::cout << "Enter simulation size: ";
     std::cin >> simulation_size;
-    std::cout << std::endl;
 
-    // TODO: Make interface to init services.
+    populate_services(services);
+
     std::cout << "Simulating " << simulation_size << " clients..." << std::endl;
     populate_clients(simulation_size, clients, services, priorities);
 
