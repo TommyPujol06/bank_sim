@@ -16,6 +16,7 @@
 #include <boost/random.hpp>
 
 using std::vector;
+using boost::optional;
 
 struct TimeElapsed {
     int years;
@@ -119,7 +120,7 @@ public:
     void push(Service& service, int weight);
     void remove(const char* name) const;
 
-    [[maybe_unused]] std::optional<Service> find(const char* name);
+    [[maybe_unused]] optional<Service> find(const char* name);
     Service* random();
 
     ServiceBucket() {
@@ -137,7 +138,7 @@ void ServiceBucket::push(Service& service, int weight) {
 }
 
 [[maybe_unused]]
-std::optional<Service> ServiceBucket::find(const char* name) {
+optional<Service> ServiceBucket::find(const char* name) {
     // FIXME: Use a more efficient search algorithm.
     for (auto& service : this->services) {
         if(strcmp(service.name, name) == 0) return service;
@@ -226,16 +227,15 @@ void populate_services(ServiceBucket out) {
 	    std::cout << "Service-" << i << " config." << std::endl;
 
 	    std::string name;
-	    // FIXME: For some reason this isn't reading the string.
 	    std::cout << "Service name: " << std::endl;
+		std::cin.ignore();
 	    std::getline (std::cin, name);
-	    std::cout << "[" << __FILE__ << ":" << __LINE__ << "] name=`" << name << "`." << std::endl;
 
 	    long wait_time, cost, demand, profit, offer, usage;
 	    std::cout << "Average wait time (seconds): " << std::endl;
 	    std::cin >> wait_time;
 
-	    std::cout << "Cost: " << std::endl;
+	    std::cout << "Cost (1/100 of currency: 1€ => 100): " << std::endl;
 	    std::cin >> cost;
 
 	    std::cout << "Demand per hour: " << std::endl;
@@ -253,6 +253,7 @@ void populate_services(ServiceBucket out) {
 	    
 	    std::string next;
 	    std::cout << "Press Y to add a new service." << std::endl;
+		std::cin.ignore();
 	    std::getline (std::cin, next);
 
 	    Service tmp = Service(name.c_str(), wait_time, cost, demand, profit, offer);
